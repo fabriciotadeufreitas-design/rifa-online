@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rifa Online</title>
+    <style>
+        * {margin: 0; padding: 0; font-family: Arial, sans-serif; box-sizing: border-box;}
+        body {background-color: #f5f5f5; padding: 15px;}
+        .container {max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);}
+        
+        h1 {text-align: center; color: #2c3e50; margin-bottom: 20px; font-size: 24px;}
+        .foto-premio {width: 100%; max-height: 320px; object-fit: cover; border-radius: 8px; margin-bottom: 20px; border: 2px solid #eee;}
+        .info-rifa {text-align: center; font-size: 18px; margin-bottom: 25px; color: #333; line-height: 1.6;}
+        
+        .grade {display: grid; grid-template-columns: repeat(10, 1fr); gap: 8px; margin: 30px 0;}
+        .numero {padding: 16px 8px; text-align: center; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; font-size: 16px; transition: 0.2s;}
+        .numero:hover {transform: scale(1.05);}
+        .disponivel {background: #ecf0f1; color: #222; border: 1px solid #bdc3c7;}
+        .reservado {background: #e74c3c; color: white;}
+        .pago {background: #ffffff; color: #27ae60; border: 2px solid #27ae60;}
+        
+        .botoes-principais {display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap;}
+        .botao {flex: 1; min-width: 140px; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .compartilhar {background: #3498db; color: white;}
+        .compartilhar:hover {background: #2980b9;}
+        .salvar {background: #f39c12; color: white;}
+        .salvar:hover {background: #e67e22;}
+        .carregar {background: #9b59b6; color: white;}
+        .carregar:hover {background: #8e44ad;}
+        
+        .admin-acesso {margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;}
+        .admin-acesso h3 {margin-bottom: 12px; color: #2c3e50;}
+        #senhaAdmin {padding: 12px; width: 70%; border: 1px solid #ddd; border-radius: 6px; margin-right: 8px; font-size: 16px;}
+        .botao-admin {padding: 12px 20px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;}
+        
+        .admin-area {margin-top: 25px; padding: 20px; background: #fdfdfd; border-radius: 8px; border: 1px solid #eee; display: none;}
+        .admin-area h3 {color: #2c3e50; margin-bottom: 15px;}
+        .estatisticas {display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; text-align: center;}
+        .stat {padding: 15px; border-radius: 8px; font-weight: bold;}
+        .disp {background: #ecf0f1; color: #222;}
+        .res {background: #e74c3c; color: white;}
+        .pag {background: #27ae60; color: white;}
+        
+        .controle-item {margin: 10px 0; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #3498db;}
+        .controle-botoes {margin-top: 8px; display: flex; gap: 6px;}
+        .btn-status {padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;}
+        .btn-disp {background: #bdc3c7; color: #222;}
+        .btn-res {background: #e74c3c; color: white;}
+        .btn-pag {background: #27ae60; color: white;}
+        
+        .aviso-reserva {margin-top: 15px; padding: 12px; background: #fff3cd; border-radius: 6px; color: #856404; font-size: 14px; text-align: center;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎟️ Rifa Online</h1>
+        
+        <!-- AQUI VOCÊ COLOCA A FOTO: troque o link abaixo -->
+        <img src="foto-do-premio.jpg" alt="Prêmio da rifa" class="foto-premio" id="fotoPremio">
+        
+        <div class="info-rifa">
+            <strong>Nome do Prêmio:</strong> <span id="nomePremio">Seu Prêmio Aqui</span><br>
+            <strong>Valor por número:</strong> R$ <span id="valorNumero">10,00</span><br>
+            <strong>Data do Sorteio:</strong> <span id="dataSorteio">30/07/2026</span>
+        </div>
+
+        <div class="grade" id="gradeNumeros"></div>
+
+        <div class="aviso-reserva">
+            ⏳ Reserva válida por 24h. Após esse prazo, o número volta a ficar disponível.
+        </div>
+
+        <div class="botoes-principais">
+            <button class="botao compartilhar" onclick="compartilharRifa()">📤 Compartilhar Rifa</button>
+            <button class="botao salvar" onclick="salvarDados()">💾 Salvar Dados</button>
+            <button class="botao carregar" onclick="document.getElementById('arquivoDados').click()">📂 Carregar Dados</button>
+            <input type="file" id="arquivoDados" accept=".json" style="display: none;" onchange="carregarDados(event)">
+        </div>
+
+        <div class="admin-acesso">
+            <h3>🔐 Área de Administração</h3>
+            <input type="password" id="senhaAdmin" placeholder="Digite sua senha">
+            <button class="botao-admin" onclick="acessarAdmin()">Acessar</button>
+        </div>
+
+        <div class="admin-area" id="areaAdmin">
+            <h3>⚙️ Controle da Rifa</h3>
+            
+            <div class="estatisticas">
+                <div class="stat disp">Disponíveis<br><span id="qtdDisp">100</span></div>
+                <div class="stat res">Reservados<br><span id="qtdRes">0</span></div>
+                <div class="stat pag">Pagos<br><span id="qtdPag">0</span></div>
+            </div>
+
+            <h4 style="margin: 20px 0 10px;">Editar dados da rifa:</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+                <input type="text" id="editarNome" placeholder="Nome do prêmio" style="padding: 8px; flex: 1;">
+                <input type="text" id="editarValor" placeholder="Valor R$" style="padding: 8px; width: 120px;">
+                <input type="text" id="editarData" placeholder="Data do sorteio" style="padding: 8px; width: 140px;">
+                <input type="text" id="editarFoto" placeholder="Link da foto" style="padding: 8px; flex: 1;">
+                <button class="botao-admin" onclick="atualizarDadosRifa()">Salvar Alterações</button>
+            </div>
+
+            <h4>Controle de números:</h4>
+            <div id="controleNumeros"></div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURAÇÕES INICIAIS - ALTERE AQUI O QUE PRECISAR
+        let numeros = {};
+        const senhaCorreta = "123456"; // TROQUE ESTA SENHA
+        let dadosRifa = {
+            nome: "Seu Prêmio Aqui",
+            valor: "10,00",
+            data: "30/07/2026",
+            foto: "foto-do-premio.jpg"
+        };
+
+        // Inicializa todos os números de 00 a 99
+        function inicializarNumeros() {
+            for(let i = 0; i < 100; i++){
+                let num = i.toString().padStart(2, '0');
+                if(!numeros[num]) {
+                    numeros[num] = {
+                        status: 'disponivel',
+                        nome: '',
+                        telefone: '',
+                        dataReserva: null
+                    };
+                }
+            }
+        }
+
+        // Renderiza a grade de números
+        function renderizarGrade(){
+            const grade = document.getElementById('gradeNumeros');
+            grade.innerHTML = '';
+            for(let num in numeros){
+                const btn = document.createElement('button');
+                btn.className = `numero ${numeros[num].status}`;
+                btn.textContent = num;
+                btn.onclick = () => escolherNumero(num);
+                grade.appendChild(btn);
+            }
+            atualizarEstatisticas();
+        }
+
+        // Escolher número e cadastrar comprador
+        function escolherNumero(num){
+            if(numeros[num].status === 'disponivel'){
+                let nome = prompt('Digite seu nome completo:');
+                if(!nome) return;
+                
+                let telefone = prompt('Digite seu WhatsApp/Telefone:');
+                if(!telefone) return;
+
+                numeros[num] = {
+                    status: 'reservado',
+                    nome: nome,
+                    telefone: telefone,
+                    dataReserva: new Date().toISOString()
+                };
+                
+                alert(`✅ Número ${num} reservado com sucesso!\nEnvie o pagamento para confirmar.`);
+                renderizarGrade();
+                if(document.getElementById('areaAdmin').style.display === 'block') {
+                    renderizarControleAdmin();
+                }
+            } 
+            else if(numeros[num].status === 'reservado'){
+                alert(`⚠️ Número ${num} já está reservado para:\n${numeros[num].nome}\n📞 ${numeros[num].telefone}`);
+            }
+            else {
+                alert(`✅ Número ${num} já está pago e confirmado.`);
+            }
+        }
+
+        // Compartilhar link
+        function compartilharRifa(){
+            const link = window.location.href;
+            navigator.clipboard.writeText(link);
+            alert('🔗 Link copiado!\nEnvie para quantas pessoas quiser.');
+        }
+
+        // Acesso à administração
+        function acessarAdmin(){
+            const senha = document.getElementById('senhaAdmin').value;
+            if(senha === senhaCorreta){
+                document.getElementById('areaAdmin').style.display = 'block';
+                renderizarControleAdmin();
+                atualizarCamposEdicao();
+                alert('🔓 Acesso liberado!');
+            } else {
+                alert('❌ Senha incorreta!');
+            }
+        }
+
+        // Renderizar controle da administração
+        function renderizarControleAdmin(){
+            const div = document.getElementById('controleNumeros');
+            div.innerHTML = '';
+            
+            for(let num in numeros){
+                const item = document.createElement('div');
+                item.className = 'controle-item';
+                
+                let info = `<strong>Número ${num}</strong> | Status: ${traduzirStatus(numeros[num].status)}<br>`;
+                if(numeros[num].nome) {
+                    info += `Comprador: ${numeros[num].nome} | Tel: ${numeros[num].telefone}<br>`;
+                }
+
+                item.innerHTML = `
+                    ${info}
+                    <div class="controle-botoes">
+                        <button class="btn-status btn-disp" onclick="alterarStatus('${num}', 'disponivel')">Disponível</button>
+                        <button class="btn-status btn-res" onclick="alterarStatus('${num}', 'reservado')">Reservado</button>
+                        <button class="btn-status btn-pag" onclick="alterarStatus('${num}', 'pago')">Pago</button>
+                    </div>
+                `;
+                div.appendChild(item);
+            }
+        }
+
+        // Alterar status do número
+        function alterarStatus(num, novoStatus){
+            if(novoStatus === 'disponivel') {
+                if(confirm('Tem certeza que deseja liberar este número? Os dados serão apagados.')) {
+                    numeros[num] = {status: 'disponivel', nome: '', telefone: '', dataReserva: null};
+                } else {
+                    return;
+                }
+            } else {
+                numeros[num].status = novoStatus;
+            }
+            
+            renderizarGrade();
+            renderizarControleAdmin();
+            alert('✅ Status atualizado!');
+        }
+
+        // Atualizar estatísticas
+        function atualizarEstatisticas() {
+            let disp = 0, res = 0, pag = 0;
+            for(let num in numeros) {
+                switch(numeros[num].status) {
+                    case 'disponivel': disp++; break;
+                    case 'reservado': res++; break;
+                    case 'pago': pag++; break;
+                }
+            }
+            document.getElementById('qtdDisp').textContent = disp;
+            document.getElementById('qtdRes').textContent = res;
+            document.getElementById('qtdPag').textContent = pag;
+        }
+
+        // Traduzir status para exibição
+        function traduzirStatus(status) {
+            switch(status) {
+                case 'disponivel': return 'Disponível';
+                case 'reservado': return 'Reservado';
+                case 'pago': return 'Pago';
+                default: return status;
+            }
+        }
+
+        // Atualizar dados da rifa
+        function atualizarDadosRifa() {
+            dadosRifa.nome = document.getElementById('editarNome').value || dadosRifa.nome;
+            dadosRifa.valor = document.getElementById('editarValor').value || dadosRifa.valor;
+            dadosRifa.data = document.getElementById('editarData').value || dadosRifa.data;
+            dadosRifa.foto = document.getElementById('editarFoto').value || dadosRifa.foto;
+
+            document.getElementById('nomePremio').textContent = dadosRifa.nome;
+            document.getElementById('valorNumero').textContent = dadosRifa.valor;
+            document.getElementById('dataSorteio').textContent = dadosRifa.data;
+            document.getElementById('fotoPremio').src = dadosRifa.foto;
+            
+            alert('✅ Dados da rifa atualizados!');
+        }
+
+        // Preencher campos de edição
+        function atualizarCamposEdicao() {
+            document.getElementById('editarNome').value = dadosRifa.nome;
+            document.getElementById('editarValor').value = dadosRifa.valor;
+            document.getElementById('editarData').value = dadosRifa.data;
+            document.getElementById('editarFoto').value = dadosRifa.foto;
+        }
+
+        // 💾 SALVAR DADOS EM ARQUIVO
+        function salvarDados() {
+            const dadosCompletos = {
+                dadosRifa: dadosRifa,
+                numeros: numeros,
+                dataSalvamento: new Date().toLocaleString('pt-BR')
+            };
+            
+            const conteudo = JSON.stringify(dadosCompletos, null, 2);
+            const blob = new Blob([conteudo], {type: 'application/json;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rifa-${dadosRifa.nome.replace(/\s+/g, '-')}-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('✅ Dados salvos com sucesso!\nGuarde este arquivo em local seguro.');
+        }
+
+        // 📂 CARREGAR DADOS SALVOS
+        function carregarDados(event) {
+            const arquivo = event.target.files[0];
+            if(!arquivo) return;
+
+            const leitor = new FileReader();
+            leitor.onload = function(e) {
+                try {
+                    const dadosCarregados = JSON.parse(e.target.result);
+                    dadosRifa = dadosCarregados.dadosRifa || dadosRifa;
+                    numeros = dadosCarregados.numeros || numeros;
+                    
+                    document.getElementById('nomePremio').textContent = dadosRifa.nome;
+                    document.getElementById('valorNumero').textContent = dadosRifa.valor;
+                    document.getElementById('dataSorteio').textContent = dadosRifa.data;
+                    document.getElementById('fotoPremio').src = dadosRifa.foto;
+                    
+                    renderizarGrade();
+                    if(document.getElementById('areaAdmin').style.display === 'block') {
+                        renderizarControleAdmin();
+                        atualizarCamposEdicao();
+                    }
+                    
+                    alert('✅ Dados carregados com sucesso!');
+                } catch (erro) {
+                    alert('❌ Arquivo inválido! Não foi possível carregar os dados.');
+                }
+            };
+            leitor.readAsText(arquivo);
+        }
+
+        // Iniciar tudo ao carregar a página
+        window.onload = function() {
+            inicializarNumeros();
+            renderizarGrade();
+        };
+    </script>
+</body>
+</html>
